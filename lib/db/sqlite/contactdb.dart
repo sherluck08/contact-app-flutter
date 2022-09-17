@@ -121,6 +121,8 @@ class ContactDB {
     final directory = await getApplicationDocumentsDirectory();
     final dbPath = '${directory.path}/$dbName';
 
+    print(dbPath);
+
     try {
       final db = await openDatabase(dbPath);
       _db = db;

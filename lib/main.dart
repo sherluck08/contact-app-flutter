@@ -33,6 +33,7 @@ class MyApp extends StatelessWidget {
 }
 
 Future<bool> showDeleteDialog(BuildContext context, String contactName) {
+  bool shouldDelete = false;
   return showDialog(
       context: context,
       builder: (context) {
@@ -41,24 +42,22 @@ Future<bool> showDeleteDialog(BuildContext context, String contactName) {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(null);
+                shouldDelete = false;
+                Navigator.of(context);
               },
               child: const Text('No'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(true);
+                shouldDelete = true;
+                Navigator.of(context);
               },
               child: const Text('Delete'),
             ),
           ],
         );
       }).then((value) {
-    if (value is bool) {
-      return true;
-    } else {
-      return false;
-    }
+    return shouldDelete;
   });
 }
 
@@ -243,7 +242,7 @@ class _HomePageState extends State<HomePage> {
                       context: context,
                       builder: (context) {
                         return const AlertDialog(
-                          title: Text('COM 326 Simple Contact App v0.1'),
+                          title: Text('COM 326 Simple Contact App v0.2'),
                           content: Text(
                               'This is an app built by HND1 Computer Students (Group 8)\n\nFor an assignment on building a mini mobile, this simple app utilizes all the database CRUD functionality'),
                         );
@@ -296,25 +295,53 @@ class _HomePageState extends State<HomePage> {
                         final contact = contacts[index];
                         return Dismissible(
                           key: Key(contact.toString()),
-                          onDismissed: (direction) async {
-                            final shouldDelete =
-                                await showDeleteDialog(context, contact.name);
-                            // print(shouldDelete);
-                            if (shouldDelete) {
-                              print("hey");
-                              await _crudStorage.deleteContact(contact);
-                              setState(() {
-                                contacts.removeAt(index);
-                                String name = contact.name;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content:
-                                        Text('$name removed from contact list'),
-                                  ),
-                                );
-                              });
-                              setState(() {});
+                          background: Container(
+                            color: Colors.red,
+                            child:
+                                const Icon(Icons.delete, color: Colors.white),
+                          ),
+                          confirmDismiss: (direction) async {
+                            String contactName = contact.name;
+                            bool shouldDelete = false;
+                            if (direction == DismissDirection.startToEnd) {
+                              await showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      content: Text(
+                                          'Are you sure you want to delete $contactName?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            shouldDelete = false;
+                                            Navigator.of(context).pop(null);
+                                          },
+                                          child: const Text('No'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () async {
+                                            shouldDelete = true;
+                                            Navigator.of(context).pop(true);
+                                            await _crudStorage
+                                                .deleteContact(contact);
+                                            setState(() {
+                                              contacts.removeAt(index);
+                                            });
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    '$contactName removed from contact list'),
+                                              ),
+                                            );
+                                          },
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    );
+                                  });
                             }
+                            return shouldDelete;
                           },
                           child: ContactTile(
                             contact: contact,
